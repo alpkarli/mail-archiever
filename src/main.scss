@@ -1,2 +1,14 @@
 @import 'node_modules/bootstrap/scss/bootstrap';
 @import 'node_modules/bootstrap-vue/src/index.scss';
+
+.table.b-table > thead > tr > [aria-sort="none"] {
+    background-image: none !important;
+}
+
+.table.b-table > thead > tr > [aria-sort="descending"] {
+    background-image: url(./assets/icon_arrow01.svg) !important;
+}
+
+.table.b-table > thead > tr > [aria-sort="ascending"] {
+    background-image: none !important;
+}

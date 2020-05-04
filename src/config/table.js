@@ -11,7 +11,6 @@ export const config = {
             key: 'to',
             label: 'To',
             sortable: true,
-            class: 'text-center'
         },
         {
             key: 'subject',
@@ -62,4 +61,5 @@ export const config = {
     responsive: 'md',
     theadClass: '',
     isBusy: false,
+    showEmpty: true
 }

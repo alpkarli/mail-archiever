@@ -1,7 +1,7 @@
 
 
 <template>
-  <b-container fluid class="px-auto">
+  <b-container fluid class="px-3">
     <b-row class="mx-0 my-3" align-h="between" align-v="center">
 
       <b-col cols="auto" class="m-0 p-0">
@@ -72,7 +72,7 @@
     <b-row class="mx-0 mb-2">
       <b-table
         ref="table"
-        show-empty
+        :show-empty="table.showEmpty"
         :small="table.small"
         :hover="table.hover"
         :table-variant="table.variant"
@@ -100,14 +100,21 @@
           {{ data.label }}
         </template>
         <template v-slot:cell(from)="data">
-          <b-link v-bind:class="computedTextClass" class="no-underline" :href="`mailto:${data.value}`">{{ data.value }}</b-link>
+          <div class="w-100 text-truncate">
+            <b-link v-bind:class="computedTextClass" class="no-underline" :href="`mailto:${data.value}`">{{ data.value }}</b-link>
+          </div>
         </template>
         <template v-slot:cell(to)="data">
-          <b-link v-if="!check(data.value)" v-bind:class="computedTextClass" class="no-underline" :href="`mailto:${data.value}`">{{ data.value }}</b-link>
-          <b-link v-else v-for="(item, index) in data.value" :key="index" v-bind:class="computedTextClass" class="no-underline" :href="`mailto:${item}`">{{ item }}<span v-if="(index !== (data.value.length - 1))">, </span></b-link>
+          <div class="w-100 text-truncate">
+            <b-link v-if="!check(data.value)" v-bind:class="computedTextClass" class="no-underline" :href="`mailto:${data.value}`">{{ data.value }}</b-link>
+            <b-link v-else v-for="(item, index) in data.value" :key="index" v-bind:class="computedTextClass" class="no-underline text-truncate" :href="`mailto:${item}`">{{ item }}<span v-if="(index !== (data.value.length - 1))">, </span></b-link>
+            <b-badge v-if="check(data.value)" class="float-right d-block" :variant="badgeTheme">+{{(data.value.length - 1)}}</b-badge>
+          </div>
         </template>
         <template v-slot:cell(subject)="data">
-          <span v-bind:class="computedTextClass">{{ data.value }}</span><b-img v-if="!data.item.attachment" :src="images.clipIcon" class="icon-size" fluid alt="attachment" right></b-img>
+          <div class="w-100 text-truncate">
+            <span v-bind:class="computedTextClass">{{ data.value }}</span><b-img v-if="!data.item.attachment" :src="images.clipIcon" class="icon-size d-none d-md-block" fluid alt="attachment" right></b-img>
+          </div>
         </template>
         <template v-slot:cell(date)="data">
           <span v-bind:class="computedTextClass">{{ data.value }}</span>
@@ -137,7 +144,6 @@
         </template>
       </b-table>
     </b-row>
-
   </b-container>
 </template>
 
@@ -196,12 +202,26 @@ export default {
       },
       computedTextClass() {
         let textClass;
-        if (this.selectedTheme() == 'light') {
+        if (this.selectedTheme == 'light') {
           textClass = 'text-secondary';
         } else {
           textClass = 'text-light';
         }
         return textClass;
+      },
+      selectedTheme() {
+        if (this.table.variant == 'light') {
+          return 'light';
+        } else {
+          return 'dark';
+        }
+      },
+      badgeTheme() {
+        if (this.table.variant == 'light') {
+          return 'secondary';
+        } else {
+          return 'light';
+        }
       },
       selectDragAttribute() {
         return {
@@ -259,13 +279,6 @@ export default {
       changeTheme(value) {
         this.table.variant = value;
         this.table.headVariant = value;
-      },
-      selectedTheme() {
-        if (this.table.variant == 'light') {
-          return 'light';
-        } else {
-          return 'dark';
-        }
       },
       changeHeadClass(items) {
         if (!items.length) {
