@@ -9,20 +9,25 @@
           <b-input-group size="sm">
               <v-date-picker 
               mode="range"
-              v-model="datePicker.range"
+              v-model="computedRange"
               :attributes='datePicker.attrs'
-              :available-dates='{
-                start: new Date(2018, 0, 1),
-                end: new Date()
-              }'
-              :inputProps="inputProps"
+              :available-dates='datePicker.available'
+              :select-attribute="selectDragAttribute"
+              :drag-attribute="selectDragAttribute"
+              @drag="datePicker.dragValue = $event"
               >
+              <div slot="day-popover" slot-scope="{ format }">
+                {{ format(datePicker.dragValue ? datePicker.dragValue.start : datePicker.range.start, 'MMM D') }}
+                -
+                {{ format(datePicker.dragValue ? datePicker.dragValue.end : datePicker.range.end, 'MMM D') }}
+              </div>
               <input
               size="md"
               class="w-full shadow appearance-none border rounded-left py-2 px-3 text-gray-700 hover:border-gray-5 text-right border-right-0 border-secondary outline-zero"
                 id="date"
                 slot-scope="{ inputProps, inputEvents }"
                 :style="{backgroundImage: `url(${images.calenderIcon})`, backgroundPosition: '10px 10px', backgroundRepeat: 'no-repeat', backgroundSize: '19px'}"
+                
                 v-bind="inputProps"
                 v-on="inputEvents">
             </v-date-picker>
@@ -35,16 +40,25 @@
         </b-form-group>
       </b-col>
       <b-col cols="auto" class="m-0 p-0">
+        <b-form-group class="m-0 p-0 mb-lg-2 mt-lg-0 mt-2">
+          <b-input-group size="sm">
+            <b-input-group-append>
+              <b-button squared class="w-100 shadow border-secondary border-right rounded-right" variant="info" @click="getAllMails('light')">
+                Get All Mails
+              </b-button>
+            </b-input-group-append>
+          </b-input-group>
+        </b-form-group>
         <b-form-group class="m-0 p-0 mt-lg-0 mt-2">
           <b-input-group size="sm">
-          <b-input-group-append>
-            <b-button squared class="w-100 shadow border-secondary border-right rounded-right" variant="light" @click="changeTheme('light')">
-              Light
-            </b-button>
-            <b-button squared class="w-100 shadow border-secondary border-right rounded-left" variant="dark" @click="changeTheme('dark')">
-              Dark
-            </b-button>
-          </b-input-group-append>
+            <b-input-group-append>
+              <b-button squared class="w-100 shadow border-secondary border-right rounded-right" variant="light" @click="changeTheme('light')">
+                Light
+              </b-button>
+              <b-button squared class="w-100 shadow border-secondary border-right rounded-left" variant="dark" @click="changeTheme('dark')">
+                Dark
+              </b-button>
+            </b-input-group-append>
           </b-input-group>
         </b-form-group>
       </b-col>
@@ -52,10 +66,10 @@
     </b-row>
 
     <b-row class="mx-0 font-weight-bold">
-      <p>Results: {{ items.length }} mail(s)</p>
+      <p>Results: {{ tableLength }} mail(s)</p>
     </b-row>
 
-    <b-row v-if="!items.length" class="mx-0 mb-2">
+    <b-row v-if="!tableLength" class="mx-0 mb-2">
       <hr class="w-100 m-0 mb-5">
       <img :src="images.logo" class="mt-5 mx-auto d-block" alt="logo">
     </b-row>
@@ -74,6 +88,8 @@
         :per-page="table.perPage"
         :filter="table.filter"
         :filterIncludedFields="table.filterOn"
+        @filtered="onFiltered"
+        :filter-function="dateFilter"
         :sort-by.sync="table.sortBy"
         :sort-desc.sync="table.sortDesc"
         :sort-direction="table.sortDirection"
@@ -82,7 +98,6 @@
         :tbody-tr-class="rowClass"
         :busy="table.isBusy"
         @row-clicked="onRowClicked"
-        @filtered="onFiltered"
         :stacked="table.stacked"
         :responsive="table.responsive">
         <template v-slot:cell(from)="data">
@@ -109,6 +124,18 @@
             <img :src="images.logo" class="mt-5 mx-auto d-block rotate-image rounded-circle" alt="logo">
           </b-row>
         </template>
+        <template v-slot:empty>
+          <b-row class="mx-0 mb-2">
+            <hr class="w-100 m-0 mb-5">
+            <img :src="images.logo" class="mt-5 mx-auto d-block" alt="logo">
+          </b-row>
+        </template>
+        <template v-slot:emptyfiltered>
+          <b-row class="mx-0 mb-2">
+            <hr class="w-100 m-0 mb-5">
+            <img :src="images.logo" class="mt-5 mx-auto d-block" alt="logo">
+          </b-row>
+        </template>
       </b-table>
     </b-row>
 
@@ -116,6 +143,9 @@
 </template>
 
 <script>
+import moment from 'moment';
+import { mails } from '../mock/mails';
+import { tableConfig } from '../config/index';
 import cIcon from '@/assets/icon_calender.svg';
 import cSearch from '@/assets/icon_search.svg';
 import cClip from '@/assets/icon_clip.svg';
@@ -129,159 +159,32 @@ export default {
   data() {
       return {
         empty: [],
-        items: [
-          { from: 'aaa@example.com', to: 'zzz.zzz@example.com', subject: '[ HR-888 ] Notice of official announcement', date: '1586320356', attachment: false,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.'
-          },
-          { from: 'bbb.bbbb@example.com', to: 'yyy@example.com', subject: '[web:333] "Web Contact"', date: '1586320356', attachment: false,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.'
-          },
-          {
-            from: 'ccc@example.com',
-            to: ['xxx@example.com', 'aaa@example.com'],
-            subject: 'Happy New Year! Greetings for the New Year.', date: '1586320356', attachment: true,
-            body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.'
-          },
-          {
-            from: 'ddd.dddd@example.com',
-            to: ['vvv.vvv@example.com', 'jjj.jjj@example.com'],
-            subject: '[HR-887(Revised: Office Expansion Project Team)] Notice of off...', date: '1586320356', attachment: false,
-            body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.'
-          },
-          { from: 'eee@example.com', to: ['sss@example.com', 'nmn@example.com', 'mnm@example.com'], subject: '[Github] Logout page', date: '1586320356', attachment: false,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.' },
-          { from: 'fff.ffff@example.com', to: 'qqq.qqq@example.com', subject: '［dev］ Postfix 3.1.12 / 3.2.9 / 3.3.4 / 3.4.5', date: '1586320356', attachment: false,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.' },
-          { from: 'ggg@example.com', to: 'ppp@example.com', subject: 'Re: [Github] Brush-up on loading animation ', date: '1586320356', attachment: false,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.' },
-          { from: 'hhh.hhh@example.com', to: 'ooo.ooo@example.com', subject: 'Workplace Summary for sample, Inc.: Jun 2 - Jun 9', date: '1586320356', attachment: true,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.' },
-          { from: 'iii@example.com', to: 'nnn@example.com', subject: 'I love you', date: '1586320356', attachment: true,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.' },
-          { from: 'Pablo-Diego-Jose-Francisco@example.com', to: 'Pablo-Diego-Jose-Francisco@example.com', subject: '[info:888] ABC EQUIPMENT COMPANY', date: '1586320356', attachment: false,
-          body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'+ 
-          'Interdum posuere lorem ipsum dolor sit amet consectetur. Diam vulputate ut pharetra sit. Non sodales neque sodales ut etiam. Id leo in vitae turpis massa sed elementum.'+
-          'Id donec ultrices tincidunt arcu non sodales neque sodales ut. Vitae congue eu consequat ac felis. Interdum velit euismod in pellentesque massa placerat duis ultricies. '+
-          'Venenatis cras sed felis eget. Neque egestas congue quisque egestas diam in. Id eu nisl nunc mi ipsum faucibus vitae aliquet nec. Dictumst vestibulum rhoncus est pellentesque'+
-          'elit ullamcorper. Risus nec feugiat in fermentum posuere urna nec tincidunt praesent. Purus viverra accumsan in nisl nisi scelerisque eu ultrices vitae.'+
-          ' Enim nunc faucibus a pellentesque sit amet porttitor eget.' },
-        ],
-        
+        items: mails,
         inputProps: {
-          placeholder: ""
+          placeholder: "",
+          readonly: true
         },
-
         images: {
           calenderIcon: cIcon,
           searchIcon: cSearch,
           logo: mailArchiverLogo,
           clipIcon: cClip
         },
-
         datePicker: {
           attrs: [
-            {
-              key: 'today',
-              dot: true,
-              dates: new Date(),
-            },
+            {},
           ],
-          range: {
-            start: new Date(),
-            end: new Date()
+          available: {
+            start: moment().subtract(2, 'years').toDate(),
+            end: moment().toDate()
           },
+          range: {
+            start: moment().startOf('day').toDate(),
+            end: moment().toDate()
+          },
+          dragValue: null
         },
-
-        table: {
-          fields: [
-            { key: 'from', label: 'From', sortable: true, sortDirection: 'desc' },
-            { key: 'to', label: 'To', sortable: true, class: 'text-center'},
-            {
-              key: 'subject',
-              label: 'Subject',
-              sortable: true,
-              sortByFormatted: true,
-              filterByFormatted: true
-            },
-            { key: 'date', label: 'Date', 
-              formatter: (value, key, item) => {
-                return new Date().getFullYear()
-              } 
-            }
-          ],
-          currentPage: 1,
-          perPage: 10,
-          filter: null,
-          filterOn: [],
-          sortBy: '',
-          sortDesc: false,
-          sortDirection: 'asc',
-          selectMode: 'multi',
-          selected: [],
-          totalRows: 1,
-          pagetotalRowsOptions: [5, 10, 15],
-          headerClass: 'header',
-          variant: 'light',
-          headVariant: 'light',
-          small: true,
-          hover: true,
-          selectable: true,
-          stacked: 'md',
-          responsive: 'md',
-          theadClass: 'bg-light text-secondary',
-          isBusy: false,
-        },
-
-        infoModal: {
-          id: 'info-modal',
-          title: '',
-          content: ''
-        },
+        table: tableConfig,
       }
     },
     computed: {
@@ -300,21 +203,31 @@ export default {
           textClass = 'text-light';
         }
         return textClass;
+      },
+      selectDragAttribute() {
+        return {
+          popover: {
+            visibility: 'hover',
+            isInteractive: false, // Defaults to true when using slot
+          },
+        };
+      },
+      computedRange: {
+        get() {
+          return this.datePicker.range;
+        },
+        set(range) {
+          this.datePicker.range = {start: range.start, end: moment(range.end, moment.defaultFormat).endOf('day').toDate()};
+        }
+      },
+      tableLength() {
+        return this.table.totalRows;
       }
     },
     mounted() {
       this.table.totalRows = this.items.length
     },
     methods: {
-      info(item, index, button) {
-        this.infoModal.title = `Row index: ${index}`
-        this.infoModal.content = JSON.stringify(item, null, 2)
-        this.$root.$emit('bv::show::modal', this.infoModal.id, button)
-      },
-      resetInfoModal() {
-        this.infoModal.title = ''
-        this.infoModal.content = ''
-      },
       onFiltered(filteredItems) {
         this.table.totalRows = filteredItems.length
         this.table.currentPage = 1
@@ -337,7 +250,10 @@ export default {
         console.log(item);
       },
       search(){
-        console.log("search");
+        this.table.filter = this.datePicker.range;
+      },
+      getAllMails() {
+        this.table.filter = this.datePicker.available;
       },
       changeTheme(value) {
         this.table.variant = value;
@@ -349,6 +265,15 @@ export default {
         } else {
           return 'dark';
         }
+      },
+      dateFilter(item, filter){
+        let start =  filter.start;
+        let end =  filter.end;
+        let date = moment.unix(item.date).local();
+        start = moment(start).startOf('day').utc().local();
+        end = moment(end).utc().local();
+        let btw = moment(date).isBetween(start, end, null, '[]');
+        return btw;
       }
     }
 }

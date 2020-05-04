@@ -7,7 +7,9 @@ import {
   TablePlugin,
   LayoutPlugin
 } from 'bootstrap-vue'
-import VCalendar from 'v-calendar';
+import VCalendar from 'v-calendar'
+import VueMoment from 'vue-moment'
+import {moment as timezone} from 'moment-timezone'
 import './main.scss'
 
 Vue.config.productionTip = false
@@ -21,6 +23,10 @@ Vue.use(DropdownPlugin)
 Vue.use(TablePlugin)
 // Use v-calendar & v-date-picker components
 Vue.use(VCalendar);
+// Moment
+Vue.use(VueMoment, {
+  timezone,
+});
 
 new Vue({
   render: h => h(App),
