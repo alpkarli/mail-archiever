@@ -96,9 +96,6 @@
         @row-clicked="onRowClicked"
         :stacked="table.stacked"
         :responsive="table.responsive">
-        <template v-slot:head()="data">
-          {{ data.label }}
-        </template>
         <template v-slot:cell(from)="data">
           <div class="w-100 text-truncate">
             <b-link v-bind:class="computedTextClass" class="no-underline" :href="`mailto:${data.value}`">{{ data.value }}</b-link>

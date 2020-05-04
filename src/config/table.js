@@ -58,7 +58,7 @@ export const config = {
     hover: true,
     selectable: true,
     stacked: 'md',
-    responsive: 'md',
+    responsive: 'lg',
     theadClass: '',
     isBusy: false,
     showEmpty: true
