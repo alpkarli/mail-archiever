@@ -60,6 +60,6 @@ export const config = {
     selectable: true,
     stacked: 'md',
     responsive: 'md',
-    theadClass: 'bg-light text-secondary',
+    theadClass: '',
     isBusy: false,
 }

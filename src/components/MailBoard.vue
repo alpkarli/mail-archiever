@@ -69,14 +69,10 @@
       <p>Results: {{ tableLength }} mail(s)</p>
     </b-row>
 
-    <b-row v-if="!tableLength" class="mx-0 mb-2">
-      <hr class="w-100 m-0 mb-5">
-      <img :src="images.logo" class="mt-5 mx-auto d-block" alt="logo">
-    </b-row>
-
-    <b-row v-else class="mx-0 mb-2">
+    <b-row class="mx-0 mb-2">
       <b-table
         ref="table"
+        show-empty
         :small="table.small"
         :hover="table.hover"
         :table-variant="table.variant"
@@ -100,6 +96,9 @@
         @row-clicked="onRowClicked"
         :stacked="table.stacked"
         :responsive="table.responsive">
+        <template v-slot:head()="data">
+          {{ data.label }}
+        </template>
         <template v-slot:cell(from)="data">
           <b-link v-bind:class="computedTextClass" class="no-underline" :href="`mailto:${data.value}`">{{ data.value }}</b-link>
         </template>
@@ -226,11 +225,13 @@ export default {
     },
     mounted() {
       this.table.totalRows = this.items.length
+      this.changeHeadClass(this.items);
     },
     methods: {
       onFiltered(filteredItems) {
         this.table.totalRows = filteredItems.length
         this.table.currentPage = 1
+        this.changeHeadClass(filteredItems);
       },
       onRowClicked(item, index, event) {
         item._showDetails = !item._showDetails;
@@ -266,6 +267,13 @@ export default {
           return 'dark';
         }
       },
+      changeHeadClass(items) {
+        if (!items.length) {
+          this.table.theadClass = 'd-none';
+        } else {
+          this.table.theadClass = '';
+        }
+      },
       dateFilter(item, filter){
         let start =  filter.start;
         let end =  filter.end;
@@ -280,29 +288,6 @@ export default {
 </script>
 
 <style scoped lang="scss">
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-.w-80 {
-    width: 80% !important;
-}
-.w-20 {
-    width: 20% !important;
-}
-.header {
-    background-color: rgb(199, 189, 189) !important;
-}
 .outline-zero {
   outline: 0;
 }
