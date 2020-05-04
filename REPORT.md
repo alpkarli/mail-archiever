@@ -4,7 +4,9 @@ Because of corona virus and the other life conditions I had to look at the proje
 
 ### To Run
 
+Run these codes in order
 ```sh
+$ npm i
 $ npm run serve
 ```
 
