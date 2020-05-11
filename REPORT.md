@@ -1,7 +1,5 @@
 # Report
 
-Because of corona virus and the other life conditions I had to look at the project a month later. I choose vue to deal with this framework a little more. There were a few compelling points. But after a bit of work I took care of them all.
-
 ### To Run
 
 Run these codes in order
